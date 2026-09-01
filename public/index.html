@@ -116,6 +116,19 @@
       authOverlay.style.display = 'none';
       currentUserLabel.textContent = `Logged in as: ${username}`;
 
+      // Load message history from the last 30 days
+      fetch('/api/messages')
+        .then(res => res.json())
+        .then(history => {
+          messages.innerHTML = ''; // Clear existing list
+          history.forEach(msg => {
+            const item = document.createElement('li');
+            item.innerHTML = `<strong>${msg.username}</strong> ${msg.text}`;
+            messages.appendChild(item);
+          });
+          messages.scrollTop = messages.scrollHeight;
+        });
+
       socket = io();
 
       chatForm.addEventListener('submit', (e) => {
