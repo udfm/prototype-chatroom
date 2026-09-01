@@ -2,25 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Basic Chatroom</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    #messages { list-style-type: none; padding: 0; max-height: 300px; overflow-y: auto; }
-    #messages li { padding: 5px 10px; margin-bottom: 4px; background: #f4f4f4; border-radius: 4px; }
-    form { display: flex; gap: 10px; margin-top: 10px; }
-    input { padding: 8px; flex: 1; }
-    button { padding: 8px 16px; cursor: pointer; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h2>Basic Chatroom</h2>
-  <ul id="messages"></ul>
 
-  <form id="chatForm">
-    <input id="username" placeholder="Your Name" required style="max-width: 120px;" />
-    <input id="messageInput" placeholder="Type a message..." autocomplete="off" required />
-    <button type="submit">Send</button>
-  </form>
+  <div class="chat-container">
+    <div class="chat-header">
+      <h2>Basic Chatroom</h2>
+    </div>
+
+    <ul id="messages"></ul>
+
+    <form id="chatForm">
+      <input id="username" placeholder="Your Name" required />
+      <input id="messageInput" placeholder="Type a message..." autocomplete="off" required />
+      <button type="submit">Send</button>
+    </form>
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -43,7 +43,7 @@
 
     socket.on('chat message', (data) => {
       const item = document.createElement('li');
-      item.textContent = `${data.user}: ${data.text}`;
+      item.innerHTML = `<strong>${data.user}</strong> ${data.text}`;
       messages.appendChild(item);
       messages.scrollTop = messages.scrollHeight;
     });
