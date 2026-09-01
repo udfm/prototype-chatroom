@@ -1,22 +1,52 @@
 <!DOCTYPE html>
-<html lang="en-us">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" width="device-width" height="device-height" initial-scale="1.0">
-  <title>pyChat</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Basic Chatroom</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #messages { list-style-type: none; padding: 0; max-height: 300px; overflow-y: auto; }
+    #messages li { padding: 5px 10px; margin-bottom: 4px; background: #f4f4f4; border-radius: 4px; }
+    form { display: flex; gap: 10px; margin-top: 10px; }
+    input { padding: 8px; flex: 1; }
+    button { padding: 8px 16px; cursor: pointer; }
+  </style>
 </head>
-  <body>
-    <h1>pyChat</h1>
-    <h2>Public Local</h2>
-    <!--Text and text container for conversing-->
-    <input type="text" id="userInput" placeholder="Type here...">
-    <button id="savetxtBtn">Send</button>
-    <ul id="textContainer"></ul>
-    <!--Account info VERY IMPORTANT-->
-    <h3>Account<h3>
-    <label for="usernameInput">Enter Username</label>
-    <input type="text" id="usernameInput" placeholder="Type username...">
-    <button onclick="processUsername()">submit</button>
-  </body
+<body>
+  <h2>Basic Chatroom</h2>
+  <ul id="messages"></ul>
+
+  <form id="chatForm">
+    <input id="username" placeholder="Your Name" required style="max-width: 120px;" />
+    <input id="messageInput" placeholder="Type a message..." autocomplete="off" required />
+    <button type="submit">Send</button>
+  </form>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const form = document.getElementById('chatForm');
+    const messageInput = document.getElementById('messageInput');
+    const username = document.getElementById('username');
+    const messages = document.getElementById('messages');
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (messageInput.value) {
+        socket.emit('chat message', {
+          user: username.value,
+          text: messageInput.value
+        });
+        messageInput.value = '';
+      }
+    });
+
+    socket.on('chat message', (data) => {
+      const item = document.createElement('li');
+      item.textContent = `${data.user}: ${data.text}`;
+      messages.appendChild(item);
+      messages.scrollTop = messages.scrollHeight;
+    });
+  </script>
+</body>
 </html>
