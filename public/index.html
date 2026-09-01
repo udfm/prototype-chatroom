@@ -8,15 +8,36 @@
 </head>
 <body>
 
+  <!-- Auth Overlay Window -->
+  <div id="authOverlay" class="auth-overlay">
+    <div class="auth-card">
+      <h2 id="authTitle">Login to Chat</h2>
+      <p id="authError" class="auth-error"></p>
+      
+      <form id="authForm">
+        <input id="authUsername" placeholder="Username" required autocomplete="off" />
+        <input id="authPassword" type="password" placeholder="Password" required />
+        <button type="submit" id="authSubmitBtn">Log In</button>
+      </form>
+
+      <div class="auth-toggle">
+        <span id="toggleText">Don't have an account?</span>
+        <button type="button" id="toggleAuthMode">Sign Up</button>
+      </div>
+      <p class="auth-note">Note: No emails are used. If you forget your password, you must create a new username.</p>
+    </div>
+  </div>
+
+  <!-- Main Chat Window -->
   <div class="chat-container">
     <div class="chat-header">
       <h2>Basic Chatroom</h2>
+      <span id="currentUserLabel"></span>
     </div>
 
     <ul id="messages"></ul>
 
     <form id="chatForm">
-      <input id="username" placeholder="Your Name" required />
       <input id="messageInput" placeholder="Type a message..." autocomplete="off" required />
       <button type="submit">Send</button>
     </form>
@@ -24,29 +45,94 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const socket = io();
-    const form = document.getElementById('chatForm');
+    let socket;
+    let isRegisterMode = false;
+
+    const authOverlay = document.getElementById('authOverlay');
+    const authForm = document.getElementById('authForm');
+    const authTitle = document.getElementById('authTitle');
+    const authSubmitBtn = document.getElementById('authSubmitBtn');
+    const toggleAuthMode = document.getElementById('toggleAuthMode');
+    const toggleText = document.getElementById('toggleText');
+    const authError = document.getElementById('authError');
+    const currentUserLabel = document.getElementById('currentUserLabel');
+
+    const chatForm = document.getElementById('chatForm');
     const messageInput = document.getElementById('messageInput');
-    const username = document.getElementById('username');
     const messages = document.getElementById('messages');
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (messageInput.value) {
-        socket.emit('chat message', {
-          user: username.value,
-          text: messageInput.value
-        });
-        messageInput.value = '';
+    // Check if user is already logged in on load
+    fetch('/api/session')
+      .then(res => res.json())
+      .then(data => {
+        if (data.loggedIn) {
+          initChat(data.user.username);
+        }
+      });
+
+    // Toggle between Login and Register modes
+    toggleAuthMode.addEventListener('click', () => {
+      isRegisterMode = !isRegisterMode;
+      authError.textContent = '';
+      if (isRegisterMode) {
+        authTitle.textContent = 'Create an Account';
+        authSubmitBtn.textContent = 'Sign Up';
+        toggleText.textContent = 'Already have an account?';
+        toggleAuthMode.textContent = 'Log In';
+      } else {
+        authTitle.textContent = 'Login to Chat';
+        authSubmitBtn.textContent = 'Log In';
+        toggleText.textContent = "Don't have an account?";
+        toggleAuthMode.textContent = 'Sign Up';
       }
     });
 
-    socket.on('chat message', (data) => {
-      const item = document.createElement('li');
-      item.innerHTML = `<strong>${data.user}</strong> ${data.text}`;
-      messages.appendChild(item);
-      messages.scrollTop = messages.scrollHeight;
+    // Handle Authentication Form Submit
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      authError.textContent = '';
+
+      const username = document.getElementById('authUsername').value;
+      const password = document.getElementById('authPassword').value;
+      const endpoint = isRegisterMode ? '/api/register' : '/api/login';
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        initChat(data.username);
+      } else {
+        authError.textContent = data.error || 'Authentication failed';
+      }
     });
+
+    // Initialize Chat after successful login
+    function initChat(username) {
+      authOverlay.style.display = 'none';
+      currentUserLabel.textContent = `Logged in as: ${username}`;
+
+      socket = io();
+
+      chatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (messageInput.value) {
+          socket.emit('chat message', { text: messageInput.value });
+          messageInput.value = '';
+        }
+      });
+
+      socket.on('chat message', (data) => {
+        const item = document.createElement('li');
+        item.innerHTML = `<strong>${data.user}</strong> ${data.text}`;
+        messages.appendChild(item);
+        messages.scrollTop = messages.scrollHeight;
+      });
+    }
   </script>
 </body>
 </html>
